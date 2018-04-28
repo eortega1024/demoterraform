@@ -50,10 +50,10 @@ variable "environment" {
 
 variable "vm_username" {
   description = ""
-  default     = "admin"
+  default     = "azure-admin"
 }
 
 variable "vm_password" {
   description = ""
-  default     = "admin"
+  default     = "Pentium4"
 }
