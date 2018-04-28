@@ -1,0 +1,193 @@
+# Call Powershell.exe with environment name as a parameter
+#data "external" "azure_secrets" {
+#  program = ["powershell.exe", "./02_KV/keyvault-retrieveSecretsFromAzureKV.ps1"]
+#query = {
+#   env = "dev"
+#}
+#}
+/* Configure Azure Provider and declare all the Variables that will be used in Terraform configurations */
+provider "azurerm" {
+  subscription_id = "${var.subscription_id}"
+  client_id       = "${var.client_id}"
+  client_secret   = "${var.client_secret}"
+  tenant_id       = "${var.tenant_id}"
+}
+
+resource "azurerm_resource_group" "demo_rg" {
+  name     = "${var.resource_group_name}"
+  location = "${var.location}"
+}
+
+resource "azurerm_virtual_network" "demo_vnet" {
+  name                = "Demo-Terraform-VNet"
+  address_space       = ["${var.vnet_cidr}"]
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.demo_rg.name}"
+
+  tags {
+    environment = "${var.environment}"
+  }
+}
+
+resource "azurerm_subnet" "demo_subnet_1" {
+  name                 = "Demo-Subnet-1"
+  address_prefix       = "${var.subnet1_cidr}"
+  virtual_network_name = "${azurerm_virtual_network.demo_vnet.name}"
+  resource_group_name  = "${azurerm_resource_group.demo_rg.name}"
+}
+
+resource "azurerm_subnet" "demo_subnet_2" {
+  name                 = "Demo-Subnet-2"
+  address_prefix       = "${var.subnet2_cidr}"
+  virtual_network_name = "${azurerm_virtual_network.demo_vnet.name}"
+  resource_group_name  = "${azurerm_resource_group.demo_rg.name}"
+}
+
+/*resource "azurerm_network_security_group" "nsg_web" {
+  name                = "Demo-Terraform-Web-NSG"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.demo_rg.name}"
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "AllowHTTP"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8080"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+  tags {
+    environment = "Dev"
+  }
+}
+resource "azurerm_network_security_group" "terraform_nsg_db" {
+  name                = "Demo-Terraform-DB-NSG"
+  location            = "${var.location}"
+  resource_group_name = "${azurerm_resource_group.demo_rg.name}"
+  security_rule {
+    name                       = "BlockInternet"
+    priority                   = 100
+    direction                  = "Outbound"
+    access                     = "Deny"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "Internet"
+  }
+  security_rule {
+    name                       = "AllowMySQL"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3306"
+    source_address_prefix      = "${var.subnet1_cidr}"
+    destination_address_prefix = "*"
+  }
+  tags {
+    environment = "Dev"
+  }
+}
+*/
+resource "azurerm_public_ip" "demo_pip" {
+  name                         = "Demo-Terraform-PIP"
+  location                     = "${var.location}"
+  resource_group_name          = "${azurerm_resource_group.demo_rg.name}"
+  public_ip_address_allocation = "static"
+
+  tags {
+    environment = "${var.environment}"
+  }
+}
+
+resource "azurerm_network_interface" "public_nic" {
+  name                      = "Demo-Terraform-Web"
+  location                  = "${var.location}"
+  resource_group_name       = "${azurerm_resource_group.demo_rg.name}"
+  network_security_group_id = "${azurerm_network_security_group.nsg_web.id}"
+
+  ip_configuration {
+    name                          = "Demo-Terraform-WebPrivate"
+    subnet_id                     = "${azurerm_subnet.demo_subnet_1.id}"
+    private_ip_address_allocation = "dynamic"
+    public_ip_address_id          = "${azurerm_public_ip.demo_pip.id}"
+  }
+
+  tags {
+    environment = "${var.environment}"
+  }
+}
+
+resource "azurerm_network_interface" "private_nic" {
+  name                      = "Demo-Terraform-DB"
+  location                  = "${var.location}"
+  resource_group_name       = "${azurerm_resource_group.demo_rg.name}"
+  network_security_group_id = "${azurerm_network_security_group.terraform_nsg_db.id}"
+
+  ip_configuration {
+    name                          = "Demo-Terraform-DBPrivate"
+    subnet_id                     = "${azurerm_subnet.demo_subnet_2.id}"
+    private_ip_address_allocation = "static"
+    private_ip_address            = "192.168.2.5"
+  }
+
+  tags {
+    environment = "${var.environment}"
+  }
+}
+
+resource "azurerm_virtual_machine" "demo_web" {
+  name                  = "Demo-Terraform-Linux"
+  location              = "${var.location}"
+  resource_group_name   = "${azurerm_resource_group.demo_rg.name}"
+  network_interface_ids = ["${azurerm_network_interface.public_nic.id}"]
+  vm_size               = "Standard_DS1_v2"
+
+  #This will delete the OS disk and data disk automatically when deleting the VM
+  delete_os_disk_on_termination = true
+
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "16.04-LTS"
+    version   = "latest"
+  }
+
+  storage_os_disk {
+    name          = "osdisk-1"
+    vhd_uri       = "${azurerm_storage_account.demo_storage.primary_blob_endpoint}${azurerm_storage_container.demo_cont.name}/osdisk-1.vhd"
+    caching       = "ReadWrite"
+    create_option = "FromImage"
+  }
+
+  os_profile {
+    computer_name  = "ubuntuweb"
+    admin_username = "${var.vm_username}"
+    admin_password = "${var.vm_password}"
+
+    #admin_password = "${data.external.azure_secrets.result.admin-password}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
+  tags {
+    environment = "${var.environment}"
+  }
+}
