@@ -82,7 +82,7 @@ resource "azurerm_network_interface" "private_nic" {
     name                          = "Demo-Terraform-DBPrivate"
     subnet_id                     = "${azurerm_subnet.demo_subnet_2.id}"
     private_ip_address_allocation = "static"
-    private_ip_address            = "192.168.2.5"
+    private_ip_address            = "10.0.2.5"
   }
 
   tags {
