@@ -1,3 +1,4 @@
 #Terraform files
 *.tfstate
 *.tfvars
+*.tfstate.backup

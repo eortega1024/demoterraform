@@ -129,4 +129,8 @@ resource "azurerm_virtual_machine" "demo_web" {
   tags {
     environment = "${var.environment}"
   }
+
+  provisioner "local-exec" {
+    command = "sleep 10; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ./Azure/provision/environment/dev/playbooks/webservers.yml -i ./Azure/provision/environment/dev/inventory/inventory"
+  }
 }

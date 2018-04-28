@@ -1,0 +1,19 @@
+---
+- hosts: webservers
+  remote_user: root
+  tasks:
+  - name: Install Apache
+    apt: name=apache2 state=present
+  - name: Start Apache
+    service: name=apache state=started
+
+- hosts: dbservers
+  remote_user: root
+  tasks:
+  - name: Install MySql
+    apt: name=mysql-server state=present
+  - name: Start MySql
+    service: name=mysql state=started
+  #- name: Deploy Apache configuration file
+  #  copy: src=/ansible/files/conf/httpd.conf
+  #        dest=/etc/httpd/conf
