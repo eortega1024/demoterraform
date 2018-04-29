@@ -131,6 +131,14 @@ resource "azurerm_virtual_machine" "demo_web" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 10; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ./Azure/provision/environment/dev/playbooks/webservers.yml -i ./Azure/provision/environment/dev/inventory/inventory"
+    command = "./provision/environment/dev/scripts/dynamicinventory.sh"
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 180;sed -i 's/{host}/${azurerm_public_ip.demo_pip.ip_address}/g' ./provision/environment/dev/inventory/inventory"
+  }
+
+  provisioner "local-exec" {
+    command = " ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ./provision/environment/dev/playbooks/webservers.yml -i ./provision/environment/dev/inventory/inventory"
   }
 }
