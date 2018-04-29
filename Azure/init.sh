@@ -1,1 +1,1 @@
-../terraform init
+terraform init
