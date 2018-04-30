@@ -21,12 +21,10 @@ variable "tenant_id" {
 
 variable "resource_group_name" {
   description = "Resource Group"
-  default     = "ReactorRG"
 }
 
 variable "location" {
   description = ""
-  default     = ""
 }
 
 variable "vnet_cidr" {
