@@ -1,4 +1,4 @@
-web1 ansible_ssh_host=40.91.212.246
+web1 ansible_ssh_host=40.91.212.236
 
 [webservers]
 web1
