@@ -1,11 +1,9 @@
-# Call Powershell.exe with environment name as a parameter
-#data "external" "azure_secrets" {
-#  program = ["powershell.exe", "./02_KV/keyvault-retrieveSecretsFromAzureKV.ps1"]
-#query = {
-#   env = "dev"
-#}
-#}
-/* Configure Azure Provider and declare all the Variables that will be used in Terraform configurations */
+###############################################################################
+# Developed by Eduardo Ortega @MagenTys
+# Free distribution, free usage
+# Demo purposee only
+###############################################################################
+
 provider "azurerm" {
   subscription_id = "${var.subscription_id}"
   client_id       = "${var.client_id}"
@@ -90,7 +88,7 @@ resource "azurerm_network_interface" "private_nic" {
   }
 }
 
-resource "azurerm_virtual_machine" "demo_web" {
+resource "azurerm_virtual_machine" "demo_frontend" {
   name                  = "Demo-Terraform-Linux"
   location              = "${var.location}"
   resource_group_name   = "${azurerm_resource_group.demo_rg.name}"
