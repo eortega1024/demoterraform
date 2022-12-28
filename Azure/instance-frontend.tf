@@ -1,7 +1,7 @@
 ###############################################################################
-# Developed by Eduardo Ortega @MagenTys
+# Viveonline 
 # Free distribution, free usage
-# Demo purposee only
+# Demo
 ###############################################################################
 
 provider "azurerm" {
